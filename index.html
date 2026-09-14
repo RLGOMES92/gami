@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#120A28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Missões">
+<link rel="icon" id="faviconLink" href="">
+<link rel="apple-touch-icon" id="appleTouchIcon" href="">
+<link rel="manifest" id="manifestLink" href="">
 <title>Missões — meu app de recompensas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -207,6 +215,34 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
     <!-- Parent dashboard -->
     <div id="parentDash" class="hidden space-y-5">
 
+      <div class="glass-hi rounded-3xl p-4 card-glow">
+        <h3 class="font-display font-semibold mb-3 flex items-center gap-2">📊 Resumo de <span id="summaryName">Manu</span></h3>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="glass rounded-xl py-2.5">
+            <p class="text-lg font-display font-semibold" id="sumLevel">1</p>
+            <p class="text-[10px] text-[var(--text-dim)]">Nível</p>
+          </div>
+          <div class="glass rounded-xl py-2.5">
+            <p class="text-lg font-display font-semibold text-[var(--orange)]" id="sumStreak">0</p>
+            <p class="text-[10px] text-[var(--text-dim)]">🔥 dias</p>
+          </div>
+          <div class="glass rounded-xl py-2.5">
+            <p class="text-lg font-display font-semibold text-[var(--amber)]" id="sumCoins">0</p>
+            <p class="text-[10px] text-[var(--text-dim)]">🪙 pts</p>
+          </div>
+          <div class="glass rounded-xl py-2.5">
+            <p class="text-lg font-display font-semibold text-[var(--lime)]" id="sumToday">0/0</p>
+            <p class="text-[10px] text-[var(--text-dim)]">hoje</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-3 flex items-center gap-2">🔔 Solicitações de recompensa</h3>
+        <div id="requestsList" class="space-y-2"></div>
+        <p id="requestsEmpty" class="hidden text-sm text-[var(--text-dim)] text-center py-2">Nenhum pedido no momento.</p>
+      </div>
+
       <div class="glass rounded-3xl p-4">
         <h3 class="font-display font-semibold mb-3 flex items-center gap-2">👤 Perfil da criança</h3>
 
@@ -314,8 +350,9 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
       <button data-tab="loja" class="tab-btn flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium text-[var(--text-dim)]">
         <i data-lucide="gift" class="w-5 h-5"></i> Loja
       </button>
-      <button data-tab="pais" class="tab-btn flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium text-[var(--text-dim)]">
+      <button data-tab="pais" class="tab-btn flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium text-[var(--text-dim)] relative">
         <i data-lucide="shield" class="w-5 h-5"></i> Responsável
+        <span id="requestBadge" class="hidden absolute top-0.5 right-6 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center" style="background:var(--pink);color:#fff;">0</span>
       </button>
     </div>
   </div>
@@ -328,6 +365,51 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
 
 <script>
 lucide.createIcons();
+
+/* ============================================================
+   ÍCONE DO APP (para "Adicionar à tela inicial")
+============================================================ */
+function drawAppIcon(size){
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const r = size*0.22;
+  ctx.beginPath();
+  ctx.moveTo(r,0); ctx.lineTo(size-r,0); ctx.quadraticCurveTo(size,0,size,r);
+  ctx.lineTo(size,size-r); ctx.quadraticCurveTo(size,size,size-r,size);
+  ctx.lineTo(r,size); ctx.quadraticCurveTo(0,size,0,size-r);
+  ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0); ctx.closePath();
+  const grad = ctx.createLinearGradient(0,0,size,size);
+  grad.addColorStop(0,'#FF1F8F'); grad.addColorStop(0.5,'#9B4DFF'); grad.addColorStop(1,'#00F0FF');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.font = (size*0.56)+'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🎯', size/2, size*0.56);
+  return canvas.toDataURL('image/png');
+}
+
+function setupAppIcon(){
+  const icon512 = drawAppIcon(512);
+  const icon180 = drawAppIcon(180);
+  document.getElementById('faviconLink').setAttribute('href', icon180);
+  document.getElementById('appleTouchIcon').setAttribute('href', icon180);
+
+  const manifest = {
+    name: 'Missões — recompensas',
+    short_name: 'Missões',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#120A28',
+    theme_color: '#120A28',
+    icons: [
+      { src: icon180, sizes: '180x180', type: 'image/png' },
+      { src: icon512, sizes: '512x512', type: 'image/png' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  document.getElementById('manifestLink').setAttribute('href', URL.createObjectURL(blob));
+}
+setupAppIcon();
 
 /* ============================================================
    STORAGE / STATE
@@ -350,7 +432,8 @@ const defaultState = {
     { id: uid(), emoji:'🎬', name:'Ir ao cinema', cost:150 },
     { id: uid(), emoji:'🎮', name:'1h a mais de videogame', cost:60 },
     { id: uid(), emoji:'🛍️', name:'Comprar algo novo', cost:300 },
-  ]
+  ],
+  requests: []
 };
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -480,13 +563,18 @@ function completeTask(id){
 ============================================================ */
 function rewardCardHTML(r){
   const affordable = state.profile.coins >= r.cost;
+  const pending = state.requests.some(q=>q.rewardId===r.id && q.status==='pending');
+  let btnLabel = 'Pedir recompensa';
+  let btnClass = affordable ? 'btn-primary' : 'glass opacity-50';
+  let disabled = !affordable;
+  if(pending){ btnLabel = 'Aguardando aprovação ⏳'; btnClass = 'glass opacity-70'; disabled = true; }
   return `
   <div class="glass card-glow rounded-2xl p-3.5 flex flex-col items-center text-center gap-1.5">
     <div class="w-12 h-12 rounded-xl icon-tile-reward flex items-center justify-center text-2xl">${r.emoji||'🎁'}</div>
     <p class="text-sm font-medium leading-tight">${escapeHtml(r.name)}</p>
     <p class="text-[11px] text-[var(--amber)] font-semibold">🪙 ${r.cost}</p>
-    <button class="redeem-btn w-full rounded-xl py-2 text-xs font-semibold mt-1 ${affordable?'btn-primary':'glass opacity-50'}" data-id="${r.id}" ${affordable?'':'disabled'}>
-      Pedir recompensa
+    <button class="redeem-btn w-full rounded-xl py-2 text-xs font-semibold mt-1 ${btnClass}" data-id="${r.id}" ${disabled?'disabled':''}>
+      ${btnLabel}
     </button>
   </div>`;
 }
@@ -496,23 +584,24 @@ function renderRewards(){
   grid.innerHTML = state.rewards.map(rewardCardHTML).join('');
   document.getElementById('rewardsEmpty').classList.toggle('hidden', state.rewards.length>0);
   document.querySelectorAll('.redeem-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>redeemReward(btn.dataset.id));
+    btn.addEventListener('click', ()=>requestReward(btn.dataset.id));
   });
 }
 
-function redeemReward(id){
+function requestReward(id){
   const r = state.rewards.find(x=>x.id===id);
   if(!r || state.profile.coins < r.cost) return;
-  state.profile.coins -= r.cost;
+  const alreadyPending = state.requests.some(q=>q.rewardId===r.id && q.status==='pending');
+  if(alreadyPending) return;
+  state.requests.push({
+    id: uid(), rewardId:r.id, rewardName:r.name, rewardEmoji:r.emoji, cost:r.cost,
+    status:'pending', date: new Date().toISOString(), childNotified:true
+  });
   saveState();
-  renderHeader();
   renderRewards();
-  celebrate();
-  const phone = (state.profile.parentPhone||'').replace(/\D/g,'');
-  const msg = `Oi! ${state.profile.avatar||'🦄'} ${state.profile.name||''} quer resgatar a recompensa: ${r.emoji||'🎁'} ${r.name} (custou ${r.cost} pontos). Pode liberar? 💖`;
-  const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-  showToast(`Pedido enviado! Aguarde a aprovação 💌`);
+  renderRequestBadge();
+  confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 }, colors: ['#FF1F8F','#9B4DFF','#00F0FF'] });
+  showToast('Pedido enviado! Espere seu responsável aprovar 💌');
 }
 
 /* ============================================================
@@ -599,6 +688,8 @@ function fillParentForm(){
   renderPhotoPreview();
   renderReminderList();
   updateNotifBtnLabel();
+  renderSummary();
+  renderRequests();
 }
 
 function renderPhotoPreview(){
@@ -814,6 +905,78 @@ document.getElementById('addRewardBtn').addEventListener('click', ()=>{
   showToast('Recompensa criada!');
 });
 
+function renderSummary(){
+  document.getElementById('summaryName').textContent = state.profile.name || 'Manu';
+  document.getElementById('sumLevel').textContent = levelFromXp(state.profile.xp);
+  document.getElementById('sumStreak').textContent = state.profile.streak;
+  document.getElementById('sumCoins').textContent = state.profile.coins;
+  const daily = state.tasks.filter(t=>t.freq==='daily');
+  document.getElementById('sumToday').textContent = `${daily.filter(isTaskDone).length}/${daily.length}`;
+}
+
+function renderRequests(){
+  const pending = state.requests.filter(q=>q.status==='pending').sort((a,b)=> new Date(b.date)-new Date(a.date));
+  const list = document.getElementById('requestsList');
+  list.innerHTML = pending.map(q=>`
+    <div class="glass-hi rounded-xl p-3 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg icon-tile-reward flex items-center justify-center text-xl shrink-0">${q.rewardEmoji||'🎁'}</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">${escapeHtml(q.rewardName)}</p>
+        <p class="text-[11px] text-[var(--amber)]">🪙 ${q.cost} pontos</p>
+      </div>
+      <button data-id="${q.id}" class="approve-req w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,var(--lime),var(--cyan));">
+        <i data-lucide="check" class="w-4 h-4 text-[#0A0714]"></i>
+      </button>
+      <button data-id="${q.id}" class="deny-req w-9 h-9 rounded-full glass flex items-center justify-center shrink-0">
+        <i data-lucide="x" class="w-4 h-4 text-[var(--pink)]"></i>
+      </button>
+    </div>`).join('');
+  document.getElementById('requestsEmpty').classList.toggle('hidden', pending.length>0);
+
+  document.querySelectorAll('.approve-req').forEach(b=>b.addEventListener('click', ()=>resolveRequest(b.dataset.id,'approved')));
+  document.querySelectorAll('.deny-req').forEach(b=>b.addEventListener('click', ()=>resolveRequest(b.dataset.id,'denied')));
+  lucide.createIcons();
+  renderRequestBadge();
+}
+
+function resolveRequest(id, status){
+  const q = state.requests.find(x=>x.id===id);
+  if(!q) return;
+  if(status==='approved'){
+    if(state.profile.coins < q.cost){ showToast('Ela não tem pontos suficientes agora'); return; }
+    state.profile.coins -= q.cost;
+  }
+  q.status = status;
+  q.childNotified = false;
+  saveState();
+  renderHeader();
+  renderSummary();
+  renderRequests();
+  showToast(status==='approved' ? 'Pedido aprovado! ✅' : 'Pedido recusado');
+}
+
+function renderRequestBadge(){
+  const count = state.requests.filter(q=>q.status==='pending').length;
+  const badge = document.getElementById('requestBadge');
+  if(count>0){ badge.textContent = count>9?'9+':count; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+}
+
+function checkChildNotifications(){
+  const toNotify = state.requests.find(q=>q.status!=='pending' && !q.childNotified);
+  if(toNotify){
+    toNotify.childNotified = true;
+    saveState();
+    if(toNotify.status==='approved'){
+      fireAlert('🎉 Pedido aprovado!', `${toNotify.rewardEmoji||'🎁'} ${toNotify.rewardName} foi liberado(a) por seu responsável!`);
+      confetti({ particleCount: 140, spread: 100, origin: { y: 0.5 }, colors: ['#FF1F8F','#9B4DFF','#00F0FF','#C6FF00','#FFB300'] });
+    } else {
+      fireAlert('😕 Pedido recusado', `${toNotify.rewardEmoji||'🎁'} ${toNotify.rewardName} não foi aprovado(a) dessa vez.`);
+    }
+  }
+}
+setInterval(checkChildNotifications, 4000);
+
 function renderManageLists(){
   const tl = document.getElementById('taskManageList');
   tl.innerHTML = state.tasks.map(t=>`
@@ -862,6 +1025,7 @@ function init(){
   renderHeader();
   renderTasks();
   renderRewards();
+  renderRequestBadge();
   lucide.createIcons();
 }
 init();
