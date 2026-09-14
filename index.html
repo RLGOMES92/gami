@@ -123,7 +123,7 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
   <header id="profileHeader" class="glass-hi rounded-3xl p-4 pop-in">
     <div class="flex items-center gap-3">
       <div class="grad-ring p-[2.5px] rounded-2xl shrink-0">
-        <div class="w-14 h-14 rounded-2xl bg-[#1a0f36] flex items-center justify-center text-2xl" id="avatarEmoji">🦄</div>
+        <div class="w-14 h-14 rounded-2xl bg-[#1a0f36] flex items-center justify-center text-2xl overflow-hidden" id="avatarEmoji">🦄</div>
       </div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
@@ -146,6 +146,18 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
       </div>
     </div>
   </header>
+
+  <!-- ===================== ALERTA DE LEMBRETE ===================== -->
+  <div id="alertBanner" class="hidden fixed inset-x-0 top-0 z-50 px-4 pt-4">
+    <div class="max-w-md mx-auto glass-hi rounded-2xl p-4 flex items-center gap-3 pop-in" style="box-shadow:0 10px 30px -6px rgba(255,31,143,0.6);">
+      <div class="w-11 h-11 rounded-full flex items-center justify-center text-2xl shrink-0 animate-bounce" style="background:linear-gradient(135deg,var(--pink),var(--amber));">⏰</div>
+      <div class="flex-1">
+        <p class="font-display font-semibold text-sm" id="alertTitle">Não esqueça suas missões!</p>
+        <p class="text-xs text-[var(--text-dim)]" id="alertBody">Você ainda tem tarefas pendentes hoje 💪</p>
+      </div>
+      <button id="alertClose" class="w-8 h-8 rounded-full glass flex items-center justify-center shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+  </div>
 
   <!-- ===================== VIEW: MISSÕES ===================== -->
   <section id="view-missoes" class="view active mt-5 space-y-5">
@@ -197,13 +209,47 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
 
       <div class="glass rounded-3xl p-4">
         <h3 class="font-display font-semibold mb-3 flex items-center gap-2">👤 Perfil da criança</h3>
+
+        <div class="flex items-center gap-3 mb-3">
+          <div class="grad-ring p-[2.5px] rounded-2xl shrink-0">
+            <div id="photoPreview" class="w-16 h-16 rounded-2xl bg-[#1a0f36] flex items-center justify-center text-2xl overflow-hidden">🦄</div>
+          </div>
+          <div class="flex-1 space-y-1.5">
+            <label class="btn-primary block text-center rounded-xl py-2 text-xs font-semibold cursor-pointer">
+              📸 Escolher foto
+              <input id="photoInput" type="file" accept="image/*" class="hidden">
+            </label>
+            <button id="removePhotoBtn" class="w-full glass rounded-xl py-2 text-xs font-medium">Remover foto</button>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-2.5">
           <input id="pName" type="text" placeholder="Nome" class="col-span-2 rounded-xl px-3 py-2.5 text-sm">
-          <input id="pAvatar" type="text" maxlength="2" placeholder="Emoji avatar 🦄" class="rounded-xl px-3 py-2.5 text-sm">
+          <input id="pAvatar" type="text" maxlength="2" placeholder="Emoji (se não usar foto)" class="col-span-2 rounded-xl px-3 py-2.5 text-sm">
           <input id="pChildPhone" type="tel" placeholder="WhatsApp da criança" class="rounded-xl px-3 py-2.5 text-sm">
           <input id="pParentPhone" type="tel" placeholder="Seu WhatsApp" class="col-span-2 rounded-xl px-3 py-2.5 text-sm">
         </div>
         <button id="saveProfileBtn" class="btn-primary w-full mt-3 rounded-xl py-2.5 text-sm font-semibold">Salvar perfil</button>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-1 flex items-center gap-2">⏰ Lembretes e alertas</h3>
+        <p class="text-xs text-[var(--text-dim)] mb-3">Toca um alerta com som e notificação nos horários abaixo, enquanto o app estiver aberto no navegador dela.</p>
+
+        <button id="notifPermBtn" class="w-full glass-hi rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2 mb-3">
+          <i data-lucide="bell" class="w-4 h-4"></i> <span id="notifPermLabel">Ativar notificações</span>
+        </button>
+
+        <div class="flex gap-2.5 mb-3">
+          <input id="reminderTime" type="time" class="flex-1 rounded-xl px-3 py-2.5 text-sm">
+          <button id="addReminderBtn" class="glass-hi rounded-xl px-4 text-sm font-semibold">Add</button>
+        </div>
+        <div id="reminderList" class="space-y-2 mb-3"></div>
+
+        <button id="testAlertBtn" class="w-full rounded-xl py-2.5 text-sm font-semibold glass flex items-center justify-center gap-2">
+          <i data-lucide="volume-2" class="w-4 h-4"></i> Testar alerta agora
+        </button>
+        <p class="text-[11px] text-[var(--text-dim)] mt-2">⚠️ Como o app não tem servidor, o alerta só funciona com essa aba aberta no celular dela (deixe fixada/favoritada).</p>
       </div>
 
       <div class="glass rounded-3xl p-4">
@@ -289,8 +335,11 @@ lucide.createIcons();
 const DB_KEY = 'missoes_app_v1';
 
 const defaultState = {
-  profile: { name:'Manu', avatar:'🦄', xp:0, coins:0, streak:0, lastActiveDay:null, childPhone:'', parentPhone:'' },
+  profile: { name:'Manu', avatar:'🦄', photo:null, xp:0, coins:0, streak:0, lastActiveDay:null, childPhone:'', parentPhone:'' },
   pin: '1234',
+  notifEnabled:false,
+  reminders: ['08:00','18:00'],
+  remindersFired: {},
   tasks: [
     { id: uid(), emoji:'🦷', name:'Escovar os dentes de manhã', freq:'daily', points:10, doneDates:[] },
     { id: uid(), emoji:'📚', name:'Fazer o dever de casa', freq:'daily', points:20, doneDates:[] },
@@ -351,7 +400,12 @@ function checkStreak(){
    RENDER: HEADER
 ============================================================ */
 function renderHeader(){
-  document.getElementById('avatarEmoji').textContent = state.profile.avatar || '🦄';
+  const avatarEl = document.getElementById('avatarEmoji');
+  if(state.profile.photo){
+    avatarEl.innerHTML = `<img src="${state.profile.photo}" class="w-full h-full object-cover" alt="foto">`;
+  } else {
+    avatarEl.textContent = state.profile.avatar || '🦄';
+  }
   document.getElementById('profileName').textContent = 'Oi, '+ (state.profile.name || 'Missões') + '!';
   const lvl = levelFromXp(state.profile.xp);
   document.getElementById('levelBadge').textContent = 'Nível '+lvl;
@@ -542,7 +596,172 @@ function fillParentForm(){
   document.getElementById('pAvatar').value = state.profile.avatar || '';
   document.getElementById('pChildPhone').value = state.profile.childPhone || '';
   document.getElementById('pParentPhone').value = state.profile.parentPhone || '';
+  renderPhotoPreview();
+  renderReminderList();
+  updateNotifBtnLabel();
 }
+
+function renderPhotoPreview(){
+  const el = document.getElementById('photoPreview');
+  if(state.profile.photo){
+    el.innerHTML = `<img src="${state.profile.photo}" class="w-full h-full object-cover" alt="foto">`;
+  } else {
+    el.textContent = state.profile.avatar || '🦄';
+  }
+}
+
+document.getElementById('photoInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const size = 300;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size/img.width, size/img.height);
+      const w = img.width*scale, h = img.height*scale;
+      ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+      state.profile.photo = canvas.toDataURL('image/jpeg', 0.85);
+      saveState();
+      renderPhotoPreview();
+      renderHeader();
+      showToast('Foto atualizada!');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('removePhotoBtn').addEventListener('click', ()=>{
+  state.profile.photo = null;
+  saveState();
+  renderPhotoPreview();
+  renderHeader();
+  showToast('Foto removida, voltou pro emoji 🦄');
+});
+
+/* ---------- Lembretes / Notificações ---------- */
+function updateNotifBtnLabel(){
+  const label = document.getElementById('notifPermLabel');
+  if('Notification' in window && Notification.permission === 'granted' && state.notifEnabled){
+    label.textContent = 'Notificações ativadas ✅';
+  } else {
+    label.textContent = 'Ativar notificações';
+  }
+}
+
+document.getElementById('notifPermBtn').addEventListener('click', async ()=>{
+  if(!('Notification' in window)){ showToast('Esse navegador não suporta notificações'); return; }
+  const perm = await Notification.requestPermission();
+  if(perm === 'granted'){
+    state.notifEnabled = true;
+    saveState();
+    showToast('Notificações ativadas!');
+    new Notification('🎉 Tudo pronto!', { body:'Você vai receber os lembretes por aqui.' });
+  } else {
+    state.notifEnabled = false;
+    saveState();
+    showToast('Permissão negada pelo navegador');
+  }
+  updateNotifBtnLabel();
+});
+
+document.getElementById('addReminderBtn').addEventListener('click', ()=>{
+  const val = document.getElementById('reminderTime').value;
+  if(!val){ showToast('Escolha um horário'); return; }
+  if(!state.reminders.includes(val)){
+    state.reminders.push(val);
+    state.reminders.sort();
+    saveState();
+    renderReminderList();
+    showToast('Lembrete adicionado!');
+  }
+});
+
+function renderReminderList(){
+  const list = document.getElementById('reminderList');
+  if(!state.reminders.length){
+    list.innerHTML = `<p class="text-xs text-[var(--text-dim)]">Nenhum lembrete cadastrado.</p>`;
+    return;
+  }
+  list.innerHTML = state.reminders.map(t=>`
+    <div class="flex items-center gap-2 glass rounded-xl px-3 py-2">
+      <i data-lucide="alarm-clock" class="w-4 h-4 text-[var(--amber)]"></i>
+      <span class="flex-1 text-sm font-medium">${t}</span>
+      <button data-t="${t}" class="del-reminder text-[var(--pink)]"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>`).join('');
+  document.querySelectorAll('.del-reminder').forEach(b=>b.addEventListener('click', ()=>{
+    state.reminders = state.reminders.filter(t=>t!==b.dataset.t);
+    saveState(); renderReminderList();
+  }));
+  lucide.createIcons();
+}
+
+document.getElementById('testAlertBtn').addEventListener('click', ()=>{
+  fireAlert('Teste de alerta ⏰', 'É assim que vai avisar sua filha na hora certa!');
+});
+
+function pendingDailyCount(){
+  return state.tasks.filter(t=>t.freq==='daily' && !isTaskDone(t)).length;
+}
+
+function fireAlert(title, body){
+  playAlarmSound();
+  const banner = document.getElementById('alertBanner');
+  document.getElementById('alertTitle').textContent = title || 'Não esqueça suas missões!';
+  document.getElementById('alertBody').textContent = body || `Você tem ${pendingDailyCount()} missão(ões) pendente(s) hoje 💪`;
+  banner.classList.remove('hidden');
+  lucide.createIcons();
+  clearTimeout(fireAlert._t);
+  fireAlert._t = setTimeout(()=>banner.classList.add('hidden'), 8000);
+
+  if('Notification' in window && Notification.permission === 'granted' && state.notifEnabled){
+    try{
+      new Notification(title || '⏰ Hora da missão!', {
+        body: body || `Você tem ${pendingDailyCount()} missão(ões) pendente(s) hoje 💪`,
+      });
+    }catch(e){}
+  }
+}
+
+document.getElementById('alertClose').addEventListener('click', ()=>{
+  document.getElementById('alertBanner').classList.add('hidden');
+});
+
+function playAlarmSound(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const freqs = [880, 660, 880, 660];
+    freqs.forEach((freq,i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i*0.22;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.22, start+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start+0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start); osc.stop(start+0.22);
+    });
+  }catch(e){}
+}
+
+function checkReminders(){
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0,5);
+  const today = todayKey();
+  if(!state.remindersFired[today]) state.remindersFired[today] = [];
+  if(state.reminders.includes(hhmm) && !state.remindersFired[today].includes(hhmm)){
+    state.remindersFired[today].push(hhmm);
+    saveState();
+    fireAlert('⏰ Hora da missão!', `Você tem ${pendingDailyCount()} missão(ões) pendente(s) hoje 💪`);
+  }
+}
+setInterval(checkReminders, 20000);
 
 document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
   state.profile.name = document.getElementById('pName').value.trim() || state.profile.name;
