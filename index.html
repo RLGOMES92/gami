@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Missões — meu app de recompensas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+:root{
+  --bg:#120A28;
+  --bg2:#1E0E3E;
+  --card:rgba(255,255,255,0.07);
+  --card-hi:rgba(255,255,255,0.12);
+  --border:rgba(255,255,255,0.14);
+  --border-hi:rgba(255,255,255,0.26);
+  --text:#FFFCFF;
+  --text-dim:#C6B8F2;
+  --pink:#FF1F8F;
+  --lime:#C6FF00;
+  --cyan:#00F0FF;
+  --violet:#9B4DFF;
+  --amber:#FFB300;
+  --orange:#FF6B2C;
+}
+*{-webkit-tap-highlight-color:transparent;}
+body{
+  background:
+    radial-gradient(55% 45% at 10% -5%, rgba(255,31,143,0.55), transparent 60%),
+    radial-gradient(55% 45% at 105% 5%, rgba(0,240,255,0.42), transparent 60%),
+    radial-gradient(60% 50% at 50% 105%, rgba(155,77,255,0.5), transparent 60%),
+    radial-gradient(40% 35% at 70% 55%, rgba(198,255,0,0.14), transparent 60%),
+    linear-gradient(160deg, #1E0E3E 0%, #120A28 55%, #170A2E 100%);
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  min-height:100vh;
+  overscroll-behavior-y:none;
+}
+h1,h2,h3,.font-display{font-family:'Fredoka',sans-serif;}
+.glass{
+  background:linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
+  border:1px solid var(--border);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.glass-hi{
+  background:linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05));
+  border:1px solid var(--border-hi);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.grad-text{
+  background:linear-gradient(90deg,var(--pink),var(--violet) 45%,var(--cyan) 85%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.grad-ring{
+  background:conic-gradient(from 180deg, var(--pink), var(--orange), var(--amber), var(--lime), var(--cyan), var(--violet), var(--pink));
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--pink) 0%, var(--orange) 45%, var(--amber) 100%);
+  box-shadow:0 10px 28px -6px rgba(255,31,143,0.65);
+}
+.btn-primary:active{transform:scale(0.96);}
+.tab-active{
+  background:linear-gradient(135deg, var(--pink), var(--violet) 60%, var(--cyan));
+  border:1px solid rgba(255,255,255,0.35);
+  box-shadow:0 6px 20px -6px rgba(255,31,143,0.55);
+  color:#fff !important;
+}
+.task-check{
+  transition:transform .15s ease, background .2s ease, border-color .2s ease;
+}
+.task-check:active{transform:scale(0.88);}
+.task-done{
+  opacity:0.6;
+}
+.task-done .task-name{text-decoration:line-through; text-decoration-color:var(--lime);}
+.progress-fill{
+  background:linear-gradient(90deg,var(--pink),var(--orange),var(--amber),var(--lime));
+  box-shadow:0 0 12px rgba(255,31,143,0.6);
+  transition:width .6s cubic-bezier(.22,1,.36,1);
+}
+.pop-in{animation:popIn .35s cubic-bezier(.22,1.2,.36,1) both;}
+@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.streak-flame{filter:drop-shadow(0 0 8px rgba(255,107,44,0.85));}
+.scrollbar-none::-webkit-scrollbar{display:none;}
+.scrollbar-none{-ms-overflow-style:none;scrollbar-width:none;}
+.view{display:none;}
+.view.active{display:block;}
+input[type=text],input[type=number],input[type=tel],select{
+  background:rgba(255,255,255,0.08);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+input::placeholder{color:var(--text-dim);}
+input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+.chip{border:1px solid var(--border-hi); background:linear-gradient(135deg, rgba(255,179,0,0.18), rgba(255,31,143,0.10));}
+.locked-blur{filter:blur(6px);pointer-events:none;user-select:none;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:10px;}
+.icon-tile{
+  background:linear-gradient(135deg, rgba(255,31,143,0.28), rgba(155,77,255,0.28));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+.icon-tile-reward{
+  background:linear-gradient(135deg, rgba(0,240,255,0.28), rgba(198,255,0,0.22));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+.card-glow{
+  box-shadow:0 6px 22px -10px rgba(155,77,255,0.45);
+}
+</style>
+</head>
+<body class="min-h-screen pb-28">
+
+<div class="max-w-md mx-auto px-4 pt-5">
+
+  <!-- ===================== HEADER / PROFILE ===================== -->
+  <header id="profileHeader" class="glass-hi rounded-3xl p-4 pop-in">
+    <div class="flex items-center gap-3">
+      <div class="grad-ring p-[2.5px] rounded-2xl shrink-0">
+        <div class="w-14 h-14 rounded-2xl bg-[#1a0f36] flex items-center justify-center text-2xl" id="avatarEmoji">🦄</div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <h1 id="profileName" class="font-display text-lg font-semibold truncate">Oi, Manu!</h1>
+          <span class="chip text-[11px] px-2 py-0.5 rounded-full font-semibold text-[var(--amber)]" id="levelBadge">Nível 3</span>
+        </div>
+        <div class="flex items-center gap-3 mt-1 text-sm text-[var(--text-dim)]">
+          <span class="flex items-center gap-1 font-semibold text-[var(--orange)]"><span class="streak-flame">🔥</span><span id="streakCount">0</span> dias</span>
+          <span class="flex items-center gap-1">🪙<span id="coinCount" class="text-[var(--amber)] font-bold">0</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <div class="flex justify-between text-[11px] text-[var(--text-dim)] mb-1">
+        <span>XP do nível</span>
+        <span id="xpLabel">0 / 100</span>
+      </div>
+      <div class="h-2.5 rounded-full bg-white/5 overflow-hidden">
+        <div id="xpBar" class="h-full progress-fill rounded-full" style="width:0%"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== VIEW: MISSÕES ===================== -->
+  <section id="view-missoes" class="view active mt-5 space-y-5">
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-display text-base font-semibold flex items-center gap-2"><span>🎯</span> Missões de hoje</h2>
+        <span id="dailyCounter" class="text-[11px] text-[var(--text-dim)]">0/0</span>
+      </div>
+      <div id="dailyList" class="space-y-2.5"></div>
+      <p id="dailyEmpty" class="hidden text-sm text-[var(--text-dim)] glass rounded-2xl p-4 text-center">Nenhuma missão diária ainda. Peça pro seu responsável criar no painel dele 👀</p>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-display text-base font-semibold flex items-center gap-2"><span>🗓️</span> Missões da semana</h2>
+        <span id="weeklyCounter" class="text-[11px] text-[var(--text-dim)]">0/0</span>
+      </div>
+      <div id="weeklyList" class="space-y-2.5"></div>
+      <p id="weeklyEmpty" class="hidden text-sm text-[var(--text-dim)] glass rounded-2xl p-4 text-center">Sem missões semanais por enquanto.</p>
+    </div>
+  </section>
+
+  <!-- ===================== VIEW: LOJA ===================== -->
+  <section id="view-loja" class="view mt-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-display text-base font-semibold flex items-center gap-2"><span>🎁</span> Loja de recompensas</h2>
+      <span class="chip text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">🪙 <span id="coinCountLoja">0</span></span>
+    </div>
+    <div id="rewardsGrid" class="grid grid-cols-2 gap-3"></div>
+    <p id="rewardsEmpty" class="hidden text-sm text-[var(--text-dim)] glass rounded-2xl p-4 text-center mt-2">Ainda não tem prêmios cadastrados. Fale com seu responsável!</p>
+  </section>
+
+  <!-- ===================== VIEW: RESPONSÁVEL ===================== -->
+  <section id="view-pais" class="view mt-5">
+
+    <!-- PIN gate -->
+    <div id="pinGate" class="glass-hi rounded-3xl p-6 text-center pop-in">
+      <div class="text-3xl mb-2">🔐</div>
+      <h2 class="font-display text-lg font-semibold">Área do responsável</h2>
+      <p class="text-sm text-[var(--text-dim)] mt-1 mb-4">Digite o PIN para entrar</p>
+      <input id="pinInput" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" class="w-32 mx-auto text-center text-2xl tracking-[8px] rounded-xl py-2.5 px-2">
+      <p id="pinError" class="hidden text-xs text-[var(--pink)] mt-2">PIN incorreto, tenta de novo.</p>
+      <button id="pinSubmit" class="btn-primary w-full mt-4 rounded-xl py-3 font-semibold">Entrar</button>
+      <p class="text-[11px] text-[var(--text-dim)] mt-3">PIN padrão: 1234 (pode trocar depois de entrar)</p>
+    </div>
+
+    <!-- Parent dashboard -->
+    <div id="parentDash" class="hidden space-y-5">
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-3 flex items-center gap-2">👤 Perfil da criança</h3>
+        <div class="grid grid-cols-2 gap-2.5">
+          <input id="pName" type="text" placeholder="Nome" class="col-span-2 rounded-xl px-3 py-2.5 text-sm">
+          <input id="pAvatar" type="text" maxlength="2" placeholder="Emoji avatar 🦄" class="rounded-xl px-3 py-2.5 text-sm">
+          <input id="pChildPhone" type="tel" placeholder="WhatsApp da criança" class="rounded-xl px-3 py-2.5 text-sm">
+          <input id="pParentPhone" type="tel" placeholder="Seu WhatsApp" class="col-span-2 rounded-xl px-3 py-2.5 text-sm">
+        </div>
+        <button id="saveProfileBtn" class="btn-primary w-full mt-3 rounded-xl py-2.5 text-sm font-semibold">Salvar perfil</button>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-3 flex items-center gap-2">➕ Nova missão</h3>
+        <div class="space-y-2.5">
+          <input id="taskEmoji" type="text" maxlength="2" placeholder="Emoji (ex: 🧹)" class="w-full rounded-xl px-3 py-2.5 text-sm">
+          <input id="taskName" type="text" placeholder="Nome da missão" class="w-full rounded-xl px-3 py-2.5 text-sm">
+          <div class="grid grid-cols-2 gap-2.5">
+            <select id="taskFreq" class="rounded-xl px-3 py-2.5 text-sm">
+              <option value="daily">Diária</option>
+              <option value="weekly">Semanal</option>
+            </select>
+            <input id="taskPoints" type="number" min="1" placeholder="Pontos" class="rounded-xl px-3 py-2.5 text-sm">
+          </div>
+        </div>
+        <button id="addTaskBtn" class="btn-primary w-full mt-3 rounded-xl py-2.5 text-sm font-semibold">Criar missão</button>
+
+        <div id="taskManageList" class="mt-4 space-y-2"></div>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-3 flex items-center gap-2">🏆 Nova recompensa</h3>
+        <div class="space-y-2.5">
+          <input id="rewardEmoji" type="text" maxlength="2" placeholder="Emoji (ex: 🎮)" class="w-full rounded-xl px-3 py-2.5 text-sm">
+          <input id="rewardName" type="text" placeholder="Nome do prêmio" class="w-full rounded-xl px-3 py-2.5 text-sm">
+          <input id="rewardCost" type="number" min="1" placeholder="Custo em pontos" class="w-full rounded-xl px-3 py-2.5 text-sm">
+        </div>
+        <button id="addRewardBtn" class="btn-primary w-full mt-3 rounded-xl py-2.5 text-sm font-semibold">Criar recompensa</button>
+
+        <div id="rewardManageList" class="mt-4 space-y-2"></div>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-2 flex items-center gap-2">📲 Enviar missão de hoje</h3>
+        <p class="text-xs text-[var(--text-dim)] mb-3">Gera uma mensagem com as missões diárias e abre no WhatsApp da criança.</p>
+        <button id="sendMissionsBtn" class="w-full rounded-xl py-2.5 text-sm font-semibold glass-hi flex items-center justify-center gap-2">
+          <i data-lucide="send" class="w-4 h-4"></i> Enviar missões no WhatsApp
+        </button>
+      </div>
+
+      <div class="glass rounded-3xl p-4">
+        <h3 class="font-display font-semibold mb-2 flex items-center gap-2">🔑 Trocar PIN</h3>
+        <div class="flex gap-2.5">
+          <input id="newPin" type="tel" inputmode="numeric" maxlength="6" placeholder="Novo PIN" class="flex-1 rounded-xl px-3 py-2.5 text-sm">
+          <button id="changePinBtn" class="glass-hi rounded-xl px-4 text-sm font-semibold">Salvar</button>
+        </div>
+      </div>
+
+      <button id="lockBtn" class="w-full text-center text-sm text-[var(--text-dim)] py-2">🔒 Bloquear área do responsável</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===================== BOTTOM TAB BAR ===================== -->
+<nav class="fixed bottom-0 left-0 right-0 z-30">
+  <div class="max-w-md mx-auto px-4 pb-4 pt-2">
+    <div class="glass-hi rounded-2xl flex p-1.5">
+      <button data-tab="missoes" class="tab-btn tab-active flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium">
+        <i data-lucide="target" class="w-5 h-5"></i> Missões
+      </button>
+      <button data-tab="loja" class="tab-btn flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium text-[var(--text-dim)]">
+        <i data-lucide="gift" class="w-5 h-5"></i> Loja
+      </button>
+      <button data-tab="pais" class="tab-btn flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs font-medium text-[var(--text-dim)]">
+        <i data-lucide="shield" class="w-5 h-5"></i> Responsável
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden">
+  <div class="glass-hi rounded-2xl px-4 py-3 text-sm font-medium flex items-center gap-2 shadow-2xl"></div>
+</div>
+
+<script>
+lucide.createIcons();
+
+/* ============================================================
+   STORAGE / STATE
+============================================================ */
+const DB_KEY = 'missoes_app_v1';
+
+const defaultState = {
+  profile: { name:'Manu', avatar:'🦄', xp:0, coins:0, streak:0, lastActiveDay:null, childPhone:'', parentPhone:'' },
+  pin: '1234',
+  tasks: [
+    { id: uid(), emoji:'🦷', name:'Escovar os dentes de manhã', freq:'daily', points:10, doneDates:[] },
+    { id: uid(), emoji:'📚', name:'Fazer o dever de casa', freq:'daily', points:20, doneDates:[] },
+    { id: uid(), emoji:'🛏️', name:'Arrumar a cama', freq:'daily', points:10, doneDates:[] },
+    { id: uid(), emoji:'🧹', name:'Arrumar o quarto', freq:'weekly', points:40, doneDates:[] },
+  ],
+  rewards: [
+    { id: uid(), emoji:'🎬', name:'Ir ao cinema', cost:150 },
+    { id: uid(), emoji:'🎮', name:'1h a mais de videogame', cost:60 },
+    { id: uid(), emoji:'🛍️', name:'Comprar algo novo', cost:300 },
+  ]
+};
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function weekKey(){
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(),0,1);
+  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay()+1)/7);
+  return d.getFullYear()+'-W'+week;
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw) return structuredClone(defaultState);
+    const parsed = JSON.parse(raw);
+    return { ...structuredClone(defaultState), ...parsed,
+      profile:{...defaultState.profile, ...parsed.profile},
+      tasks: parsed.tasks && parsed.tasks.length ? parsed.tasks : defaultState.tasks,
+      rewards: parsed.rewards && parsed.rewards.length ? parsed.rewards : defaultState.rewards
+    };
+  }catch(e){ return structuredClone(defaultState); }
+}
+function saveState(){ localStorage.setItem(DB_KEY, JSON.stringify(state)); }
+
+let state = loadState();
+
+/* ============================================================
+   LEVEL / XP HELPERS
+============================================================ */
+function levelFromXp(xp){ return Math.floor(xp/100)+1; }
+function xpIntoLevel(xp){ return xp%100; }
+
+function checkStreak(){
+  const today = todayKey();
+  if(state.profile.lastActiveDay === today) return; // already counted today
+  const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if(state.profile.lastActiveDay === yest){
+    state.profile.streak += 1;
+  } else if(state.profile.lastActiveDay !== today){
+    state.profile.streak = 1;
+  }
+  state.profile.lastActiveDay = today;
+}
+
+/* ============================================================
+   RENDER: HEADER
+============================================================ */
+function renderHeader(){
+  document.getElementById('avatarEmoji').textContent = state.profile.avatar || '🦄';
+  document.getElementById('profileName').textContent = 'Oi, '+ (state.profile.name || 'Missões') + '!';
+  const lvl = levelFromXp(state.profile.xp);
+  document.getElementById('levelBadge').textContent = 'Nível '+lvl;
+  document.getElementById('streakCount').textContent = state.profile.streak;
+  document.getElementById('coinCount').textContent = state.profile.coins;
+  document.getElementById('coinCountLoja').textContent = state.profile.coins;
+  const into = xpIntoLevel(state.profile.xp);
+  document.getElementById('xpLabel').textContent = into + ' / 100';
+  document.getElementById('xpBar').style.width = into + '%';
+}
+
+/* ============================================================
+   RENDER: TASKS
+============================================================ */
+function isTaskDone(t){
+  const key = t.freq==='daily' ? todayKey() : weekKey();
+  return t.doneDates.includes(key);
+}
+
+function taskCardHTML(t){
+  const done = isTaskDone(t);
+  return `
+  <div class="glass card-glow rounded-2xl p-3.5 flex items-center gap-3 ${done?'task-done':''}" data-id="${t.id}">
+    <div class="w-11 h-11 rounded-xl icon-tile flex items-center justify-center text-xl shrink-0">${t.emoji||'✅'}</div>
+    <div class="flex-1 min-w-0">
+      <p class="task-name font-medium text-sm truncate">${escapeHtml(t.name)}</p>
+      <p class="text-[11px] text-[var(--amber)] font-semibold">+${t.points} pts</p>
+    </div>
+    <button class="task-check w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${done?'bg-[var(--lime)]/25 border border-[var(--lime)]/60':'glass-hi'}" data-id="${t.id}" ${done?'disabled':''}>
+      <i data-lucide="${done?'check':'circle'}" class="w-5 h-5 ${done?'text-[var(--lime)]':''}"></i>
+    </button>
+  </div>`;
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderTasks(){
+  const daily = state.tasks.filter(t=>t.freq==='daily');
+  const weekly = state.tasks.filter(t=>t.freq==='weekly');
+
+  document.getElementById('dailyList').innerHTML = daily.map(taskCardHTML).join('');
+  document.getElementById('weeklyList').innerHTML = weekly.map(taskCardHTML).join('');
+  document.getElementById('dailyEmpty').classList.toggle('hidden', daily.length>0);
+  document.getElementById('weeklyEmpty').classList.toggle('hidden', weekly.length>0);
+
+  document.getElementById('dailyCounter').textContent = `${daily.filter(isTaskDone).length}/${daily.length}`;
+  document.getElementById('weeklyCounter').textContent = `${weekly.filter(isTaskDone).length}/${weekly.length}`;
+
+  document.querySelectorAll('.task-check').forEach(btn=>{
+    btn.addEventListener('click', ()=>completeTask(btn.dataset.id));
+  });
+  lucide.createIcons();
+}
+
+function completeTask(id){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t || isTaskDone(t)) return;
+  const key = t.freq==='daily' ? todayKey() : weekKey();
+  t.doneDates.push(key);
+  state.profile.coins += t.points;
+  state.profile.xp += t.points;
+  checkStreak();
+  saveState();
+  renderHeader();
+  renderTasks();
+  celebrate();
+  showToast(`+${t.points} pontos! Mandou bem 🎉`);
+}
+
+/* ============================================================
+   RENDER: REWARDS
+============================================================ */
+function rewardCardHTML(r){
+  const affordable = state.profile.coins >= r.cost;
+  return `
+  <div class="glass card-glow rounded-2xl p-3.5 flex flex-col items-center text-center gap-1.5">
+    <div class="w-12 h-12 rounded-xl icon-tile-reward flex items-center justify-center text-2xl">${r.emoji||'🎁'}</div>
+    <p class="text-sm font-medium leading-tight">${escapeHtml(r.name)}</p>
+    <p class="text-[11px] text-[var(--amber)] font-semibold">🪙 ${r.cost}</p>
+    <button class="redeem-btn w-full rounded-xl py-2 text-xs font-semibold mt-1 ${affordable?'btn-primary':'glass opacity-50'}" data-id="${r.id}" ${affordable?'':'disabled'}>
+      Pedir recompensa
+    </button>
+  </div>`;
+}
+
+function renderRewards(){
+  const grid = document.getElementById('rewardsGrid');
+  grid.innerHTML = state.rewards.map(rewardCardHTML).join('');
+  document.getElementById('rewardsEmpty').classList.toggle('hidden', state.rewards.length>0);
+  document.querySelectorAll('.redeem-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>redeemReward(btn.dataset.id));
+  });
+}
+
+function redeemReward(id){
+  const r = state.rewards.find(x=>x.id===id);
+  if(!r || state.profile.coins < r.cost) return;
+  state.profile.coins -= r.cost;
+  saveState();
+  renderHeader();
+  renderRewards();
+  celebrate();
+  const phone = (state.profile.parentPhone||'').replace(/\D/g,'');
+  const msg = `Oi! ${state.profile.avatar||'🦄'} ${state.profile.name||''} quer resgatar a recompensa: ${r.emoji||'🎁'} ${r.name} (custou ${r.cost} pontos). Pode liberar? 💖`;
+  const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  showToast(`Pedido enviado! Aguarde a aprovação 💌`);
+}
+
+/* ============================================================
+   CONFETTI + SOUND
+============================================================ */
+function celebrate(){
+  confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 },
+    colors: ['#FF4D8D','#A177FF','#35F2C8','#C6FF3D','#FFC24D'] });
+  playChime();
+}
+function playChime(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq,i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + i*0.09);
+      gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + i*0.09 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i*0.09 + 0.35);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i*0.09);
+      osc.stop(ctx.currentTime + i*0.09 + 0.4);
+    });
+  }catch(e){}
+}
+
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.querySelector('div').innerHTML = `<span>✨</span><span>${msg}</span>`;
+  toast.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toast.classList.add('hidden'), 2600);
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>{ b.classList.remove('tab-active'); b.classList.add('text-[var(--text-dim)]'); });
+    btn.classList.add('tab-active'); btn.classList.remove('text-[var(--text-dim)]');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   PARENT AREA
+============================================================ */
+let unlocked = false;
+
+document.getElementById('pinSubmit').addEventListener('click', tryUnlock);
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+
+function tryUnlock(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === state.pin){
+    unlocked = true;
+    document.getElementById('pinGate').classList.add('hidden');
+    document.getElementById('parentDash').classList.remove('hidden');
+    document.getElementById('pinError').classList.add('hidden');
+    fillParentForm();
+    renderManageLists();
+  } else {
+    document.getElementById('pinError').classList.remove('hidden');
+  }
+}
+
+document.getElementById('lockBtn').addEventListener('click', ()=>{
+  unlocked = false;
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinGate').classList.remove('hidden');
+  document.getElementById('parentDash').classList.add('hidden');
+});
+
+function fillParentForm(){
+  document.getElementById('pName').value = state.profile.name || '';
+  document.getElementById('pAvatar').value = state.profile.avatar || '';
+  document.getElementById('pChildPhone').value = state.profile.childPhone || '';
+  document.getElementById('pParentPhone').value = state.profile.parentPhone || '';
+}
+
+document.getElementById('saveProfileBtn').addEventListener('click', ()=>{
+  state.profile.name = document.getElementById('pName').value.trim() || state.profile.name;
+  state.profile.avatar = document.getElementById('pAvatar').value.trim() || state.profile.avatar;
+  state.profile.childPhone = document.getElementById('pChildPhone').value.trim();
+  state.profile.parentPhone = document.getElementById('pParentPhone').value.trim();
+  saveState();
+  renderHeader();
+  showToast('Perfil salvo!');
+});
+
+document.getElementById('changePinBtn').addEventListener('click', ()=>{
+  const np = document.getElementById('newPin').value.trim();
+  if(np.length>=4){
+    state.pin = np;
+    saveState();
+    document.getElementById('newPin').value='';
+    showToast('PIN atualizado!');
+  } else {
+    showToast('PIN precisa ter 4+ dígitos');
+  }
+});
+
+document.getElementById('addTaskBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('taskName').value.trim();
+  const emoji = document.getElementById('taskEmoji').value.trim() || '✅';
+  const freq = document.getElementById('taskFreq').value;
+  const points = parseInt(document.getElementById('taskPoints').value) || 10;
+  if(!name){ showToast('Dá um nome pra missão!'); return; }
+  state.tasks.push({ id: uid(), emoji, name, freq, points, doneDates:[] });
+  saveState();
+  document.getElementById('taskName').value='';
+  document.getElementById('taskEmoji').value='';
+  document.getElementById('taskPoints').value='';
+  renderTasks(); renderManageLists();
+  showToast('Missão criada!');
+});
+
+document.getElementById('addRewardBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('rewardName').value.trim();
+  const emoji = document.getElementById('rewardEmoji').value.trim() || '🎁';
+  const cost = parseInt(document.getElementById('rewardCost').value) || 10;
+  if(!name){ showToast('Dá um nome pro prêmio!'); return; }
+  state.rewards.push({ id: uid(), emoji, name, cost });
+  saveState();
+  document.getElementById('rewardName').value='';
+  document.getElementById('rewardEmoji').value='';
+  document.getElementById('rewardCost').value='';
+  renderRewards(); renderManageLists();
+  showToast('Recompensa criada!');
+});
+
+function renderManageLists(){
+  const tl = document.getElementById('taskManageList');
+  tl.innerHTML = state.tasks.map(t=>`
+    <div class="flex items-center gap-2 glass rounded-xl px-3 py-2">
+      <span class="text-lg">${t.emoji}</span>
+      <span class="flex-1 text-sm truncate">${escapeHtml(t.name)}</span>
+      <span class="text-[11px] text-[var(--text-dim)]">${t.freq==='daily'?'Diária':'Semanal'} · ${t.points}pt</span>
+      <button data-id="${t.id}" class="del-task text-[var(--pink)]"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>`).join('');
+
+  const rl = document.getElementById('rewardManageList');
+  rl.innerHTML = state.rewards.map(r=>`
+    <div class="flex items-center gap-2 glass rounded-xl px-3 py-2">
+      <span class="text-lg">${r.emoji}</span>
+      <span class="flex-1 text-sm truncate">${escapeHtml(r.name)}</span>
+      <span class="text-[11px] text-[var(--amber)]">🪙${r.cost}</span>
+      <button data-id="${r.id}" class="del-reward text-[var(--pink)]"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>`).join('');
+
+  document.querySelectorAll('.del-task').forEach(b=>b.addEventListener('click', ()=>{
+    state.tasks = state.tasks.filter(t=>t.id!==b.dataset.id);
+    saveState(); renderTasks(); renderManageLists();
+  }));
+  document.querySelectorAll('.del-reward').forEach(b=>b.addEventListener('click', ()=>{
+    state.rewards = state.rewards.filter(r=>r.id!==b.dataset.id);
+    saveState(); renderRewards(); renderManageLists();
+  }));
+  lucide.createIcons();
+}
+
+document.getElementById('sendMissionsBtn').addEventListener('click', ()=>{
+  const daily = state.tasks.filter(t=>t.freq==='daily');
+  if(!daily.length){ showToast('Cadastre missões diárias primeiro'); return; }
+  let msg = `🌟 Bom dia, ${state.profile.name||''}! Aqui está sua missão de hoje:\n\n`;
+  daily.forEach(t=> msg += `${t.emoji||'✅'} ${t.name} — ${t.points} pts\n`);
+  msg += `\nBora completar tudo e ganhar suas recompensas! 💪🪙`;
+  const phone = (state.profile.childPhone||'').replace(/\D/g,'');
+  const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+function init(){
+  renderHeader();
+  renderTasks();
+  renderRewards();
+  lucide.createIcons();
+}
+init();
+</script>
+</body>
+</html>
