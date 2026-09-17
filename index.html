@@ -18,7 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --bg:#120A28;
@@ -184,19 +184,16 @@ input:focus,select:focus{outline:2px solid var(--cyan);outline-offset:1px;}
 
       <!-- Estado: não conectado -->
       <div id="syncDisconnected">
-        <p class="text-xs text-[var(--text-dim)] mb-3">Sem sincronização, os dados ficam só neste aparelho. Pra pontos e tarefas aparecerem iguais no celular dela e no seu, conecte os dois a um banco gratuito (Firebase).</p>
+        <p class="text-xs text-[var(--text-dim)] mb-3">Sem sincronização, os dados ficam só neste aparelho. Pra pontos e tarefas aparecerem iguais no celular dela e no seu, conecte os dois ao banco gratuito já configurado neste app.</p>
 
-        <textarea id="configInput" rows="4" placeholder='Cole aqui a configuração (comece pelo { ... })' class="w-full rounded-xl px-3 py-2.5 text-xs font-mono"></textarea>
-        <button id="connectBtn" class="btn-primary w-full mt-2 rounded-xl py-2.5 text-sm font-semibold">Conectar</button>
+        <button id="useDefaultBtn" class="btn-primary w-full rounded-xl py-2.5 text-sm font-semibold mb-3">🔄 Conectar (projeto padrão)</button>
 
-        <button id="toggleInstructions" class="w-full text-center text-xs text-[var(--cyan)] mt-3 py-1">Não tenho essa configuração ainda — como conseguir? (grátis, 5 min)</button>
-        <ol id="syncInstructions" class="hidden text-xs text-[var(--text-dim)] space-y-1.5 mt-2 list-decimal list-inside glass rounded-xl p-3">
-          <li>Acesse <span class="text-[var(--cyan)]">console.firebase.google.com</span> e crie um projeto grátis (sem cartão).</li>
-          <li>No menu, vá em <b>Build → Realtime Database</b> → Criar banco de dados → modo teste.</li>
-          <li>Clique na engrenagem ⚙️ → Configurações do projeto → role até "Seus apps" → ícone <b>&lt;/&gt;</b> (Web) → registre o app.</li>
-          <li>Copie o objeto <b>firebaseConfig</b> que aparece (o bloco com apiKey, authDomain etc).</li>
-          <li>Cole ele aqui em cima e toque em Conectar. Depois é só mandar essa mesma configuração pro celular dela.</li>
-        </ol>
+        <button id="toggleInstructions" class="w-full text-center text-xs text-[var(--cyan)] mb-2 py-1">Usar outro projeto Firebase (avançado)</button>
+        <div id="syncInstructions" class="hidden">
+          <textarea id="configInput" rows="4" placeholder='Cole aqui a configuração (comece pelo { ... })' class="w-full rounded-xl px-3 py-2.5 text-xs font-mono"></textarea>
+          <button id="connectBtn" class="w-full glass-hi mt-2 rounded-xl py-2.5 text-sm font-semibold">Conectar com esse projeto</button>
+          <p class="text-[11px] text-[var(--text-dim)] mt-2">No console do Firebase: <b>Build → Firestore Database → Criar banco de dados</b> (modo de teste), depois copie o objeto <b>firebaseConfig</b> em Configurações do projeto → Seus apps.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -507,17 +504,29 @@ function saveState(){
   localStorage.setItem(DB_KEY, JSON.stringify(state));
   if(db && !applyingRemote){
     clearTimeout(saveState._t);
-    saveState._t = setTimeout(()=>{ db.ref('data').set(state).catch(()=>{}); }, 400);
+    saveState._t = setTimeout(()=>{ db.collection('sync').doc('family').set(state).catch(()=>{}); }, 400);
   }
 }
 
 /* ============================================================
-   SINCRONIZAÇÃO ENTRE APARELHOS (Firebase Realtime Database)
+   SINCRONIZAÇÃO ENTRE APARELHOS (Firebase Cloud Firestore)
 ============================================================ */
+const DEFAULT_FB_CONFIG = {
+  apiKey: "AIzaSyA9_FNNvYO8J-4QHyC8WTNF6Ht1u1poH9M",
+  authDomain: "gami-b55ed.firebaseapp.com",
+  projectId: "gami-b55ed",
+  storageBucket: "gami-b55ed.firebasestorage.app",
+  messagingSenderId: "353559897830",
+  appId: "1:353559897830:web:93b8192ec4e6835258bd27"
+};
+
 let db = null;
+let unsubscribeSync = null;
 let applyingRemote = false;
+let fbDisabled = localStorage.getItem('fb_disabled') === 'true';
 let fbConfig = null;
 try{ fbConfig = JSON.parse(localStorage.getItem('fb_config')||'null'); }catch(e){ fbConfig = null; }
+if(!fbConfig && !fbDisabled) fbConfig = DEFAULT_FB_CONFIG;
 
 function renderAll(){
   renderHeader();
@@ -543,23 +552,28 @@ function updateSyncIcon(connected){
 }
 
 function initFirebase(){
-  if(!fbConfig) { updateSyncIcon(false); return; }
+  if(!fbConfig){ updateSyncIcon(false); return; }
   try{
     if(!firebase.apps.length) firebase.initializeApp(fbConfig);
-    db = firebase.database();
-    db.ref('data').on('value', snap=>{
-      const remote = snap.val();
-      if(remote){
+    else firebase.app().delete().then(()=>{ firebase.initializeApp(fbConfig); });
+    db = firebase.firestore();
+    const ref = db.collection('sync').doc('family');
+    unsubscribeSync = ref.onSnapshot(doc=>{
+      if(doc.exists){
+        const remote = doc.data();
         applyingRemote = true;
         state = remote;
         localStorage.setItem(DB_KEY, JSON.stringify(state));
         renderAll();
         applyingRemote = false;
       } else {
-        db.ref('data').set(state).catch(()=>{});
+        ref.set(state).catch(()=>{});
       }
       updateSyncIcon(true);
-    }, err=>{ updateSyncIcon(false); showToast('Não consegui conectar — confira a configuração'); });
+    }, err=>{
+      updateSyncIcon(false);
+      showToast('Não consegui conectar — verifique se o Firestore está ativado');
+    });
   }catch(e){ updateSyncIcon(false); }
 }
 
@@ -579,9 +593,11 @@ document.getElementById('connectBtn').addEventListener('click', ()=>{
   const raw = document.getElementById('configInput').value.trim();
   try{
     const parsed = JSON.parse(raw);
-    if(!parsed.databaseURL){ showToast('Falta o databaseURL — copie o objeto inteiro'); return; }
+    if(!parsed.projectId){ showToast('Falta o projectId — copie o objeto inteiro'); return; }
     fbConfig = parsed;
+    fbDisabled = false;
     localStorage.setItem('fb_config', JSON.stringify(fbConfig));
+    localStorage.removeItem('fb_disabled');
     initFirebase();
     document.getElementById('syncConnected').classList.remove('hidden');
     document.getElementById('syncDisconnected').classList.add('hidden');
@@ -590,15 +606,26 @@ document.getElementById('connectBtn').addEventListener('click', ()=>{
     showToast('Não entendi essa configuração, confira se copiou tudo');
   }
 });
+document.getElementById('useDefaultBtn').addEventListener('click', ()=>{
+  fbConfig = DEFAULT_FB_CONFIG;
+  fbDisabled = false;
+  localStorage.removeItem('fb_config');
+  localStorage.removeItem('fb_disabled');
+  initFirebase();
+  document.getElementById('syncConnected').classList.remove('hidden');
+  document.getElementById('syncDisconnected').classList.add('hidden');
+  showToast('Conectado! 🎉');
+});
 document.getElementById('copyConfigBtn').addEventListener('click', ()=>{
   navigator.clipboard.writeText(JSON.stringify(fbConfig)).then(()=>{
     showToast('Configuração copiada! Cole no outro celular 📋');
   }).catch(()=>{ showToast('Não consegui copiar automaticamente'); });
 });
 document.getElementById('disconnectBtn').addEventListener('click', ()=>{
-  if(db) db.ref('data').off();
-  db = null; fbConfig = null;
+  if(unsubscribeSync) unsubscribeSync();
+  db = null; fbConfig = null; fbDisabled = true;
   localStorage.removeItem('fb_config');
+  localStorage.setItem('fb_disabled','true');
   updateSyncIcon(false);
   document.getElementById('syncConnected').classList.add('hidden');
   document.getElementById('syncDisconnected').classList.remove('hidden');
