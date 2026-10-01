@@ -1,24 +1,48 @@
-# Gami — Missões e Recompensas
+# Gami — Missões, Progresso e Recompensas
 
-Aplicação web mobile-first voltada à organização de missões, progresso e recompensas.
+Aplicação web mobile-first que transforma tarefas e objetivos em uma experiência de missões, progresso e recompensas.
 
-## Recursos identificados
+## 🎯 Problema de negócio
+
+Projetos de educação, treinamento, comunidades e programas de engajamento podem ter dificuldade para manter usuários ativos quando o acompanhamento de metas é pouco visual ou pouco interativo.
+
+## 💡 Solução
+
+O Gami organiza objetivos em missões, níveis, XP, moedas e recompensas, criando uma experiência digital que pode ser adaptada a diferentes contextos de gamificação.
+
+## ✨ Funcionalidades
+
 - Perfil e nível
-- Sequência de progresso
-- Moedas e XP
+- XP e moedas
 - Missões e tarefas
-- Recompensas
-- Interface adaptada para uso em dispositivos móveis
+- Sequência de progresso
+- Sistema de recompensas
+- Interface mobile-first
+- Feedback visual de conquistas
 
-## Tecnologias identificadas
+## 🧩 Tecnologias
+
 - HTML
 - Tailwind CSS
 - Firebase
 - Lucide
 - Canvas Confetti
 
-## Objetivo
-Transformar tarefas e objetivos em uma experiência de acompanhamento baseada em missões, progresso e recompensas.
+## 💼 Aplicações comerciais
 
-## Autor
-Rodrigo Gomes
+A arquitetura pode servir de base para plataformas de:
+
+- Educação e cursos
+- Treinamento corporativo
+- Programas de fidelidade
+- Comunidades
+- Desafios e hábitos
+- Engajamento de equipes
+
+## 🚀 Evolução possível
+
+A solução pode receber autenticação, painéis administrativos, regras de pontuação, notificações, rankings, planos pagos e integrações com outros sistemas.
+
+## 👨‍💻 Autor
+
+Rodrigo Gomes — Desenvolvedor Full Stack & Especialista em Agentes de IA
